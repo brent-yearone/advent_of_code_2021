@@ -33,14 +33,16 @@
 # Use the binary numbers in your diagnostic report to calculate the gamma rate and epsilon rate, then multiply them together. What is the power consumption of the submarine? (Be sure to represent your answer in decimal, not binary.)
 
 DEBUG = false
+NUM_CHARS = DEBUG ? 5 : 12
 
 diagnostics = []
 positions = {}
-(0..11).each{|n| positions[n] = []}
+NUM_CHARS.times{|n| positions[n] = []}
+puts "NUM_CHARS: #{NUM_CHARS}" if DEBUG
+puts "Positions: #{positions.inspect}" if DEBUG
 
-File.open('./input.txt').each do |line|
+File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
   binary_string = line.chomp
-  puts binary_string.inspect if DEBUG
   diagnostics << binary_string
   digit_index = 0
   binary_string.each_char do |digit|
@@ -51,16 +53,19 @@ File.open('./input.txt').each do |line|
 end
 puts "Positions: #{positions.inspect}" if DEBUG
 
+puts
+puts
 puts "*******************"
 puts "PART I"
 
 rates = {gamma: [], epsilon: []}
+tallies = {}
 
 puts "Tallies:"
-positions.collect do |index, digits|
-  puts "  At position #{index + 1}: #{digits.tally.inspect}"
-  tally = digits.tally
-  if tally["0"] > tally["1"]
+positions.each do |index, digits|
+  tallies[index] = digits.tally
+  puts "  At position #{index + 1}: #{tallies[index].inspect}"
+  if tallies[index]["0"] > tallies[index]["1"]
     rates[:gamma] << "0"
     rates[:epsilon] << "1"
   else
@@ -79,4 +84,96 @@ end
 puts "Gamma:   #{rates[:gamma]}"
 puts "Epsilon: #{rates[:epsilon]}"
 product = rates[:gamma] * rates[:epsilon]
-puts "Gamma x epsilon: #{product.to_s(2)} (#{product})"
+puts "Gamma x epsilon is #{product}"
+
+
+# --- Part Two ---
+
+# Next, you should verify the life support rating, which can be determined by multiplying the oxygen generator rating by the CO2 scrubber rating.
+
+# Both the oxygen generator rating and the CO2 scrubber rating are values that can be found in your diagnostic report - finding them is the tricky part. Both values are located using a similar process that involves filtering out values until only one remains. Before searching for either rating value, start with the full list of binary numbers from your diagnostic report and consider just the first bit of those numbers. Then:
+
+# Keep only numbers selected by the bit criteria for the type of rating value for which you are searching. Discard numbers which do not match the bit criteria.
+# If you only have one number left, stop; this is the rating value for which you are searching.
+# Otherwise, repeat the process, considering the next bit to the right.
+# The bit criteria depends on which type of rating value you want to find:
+
+# To find oxygen generator rating, determine the most common value (0 or 1) in the current bit position, and keep only numbers with that bit in that position. If 0 and 1 are equally common, keep values with a 1 in the position being considered.
+# To find CO2 scrubber rating, determine the least common value (0 or 1) in the current bit position, and keep only numbers with that bit in that position. If 0 and 1 are equally common, keep values with a 0 in the position being considered.
+# For example, to determine the oxygen generator rating value using the same example diagnostic report from above:
+
+# Start with all 12 numbers and consider only the first bit of each number. There are more 1 bits (7) than 0 bits (5), so keep only the 7 numbers with a 1 in the first position: 11110, 10110, 10111, 10101, 11100, 10000, and 11001.
+# Then, consider the second bit of the 7 remaining numbers: there are more 0 bits (4) than 1 bits (3), so keep only the 4 numbers with a 0 in the second position: 10110, 10111, 10101, and 10000.
+# In the third position, three of the four numbers have a 1, so keep those three: 10110, 10111, and 10101.
+# In the fourth position, two of the three numbers have a 1, so keep those two: 10110 and 10111.
+# In the fifth position, there are an equal number of 0 bits and 1 bits (one each). So, to find the oxygen generator rating, keep the number with a 1 in that position: 10111.
+# As there is only one number left, stop; the oxygen generator rating is 10111, or 23 in decimal.
+# Then, to determine the CO2 scrubber rating value from the same example above:
+
+# Start again with all 12 numbers and consider only the first bit of each number. There are fewer 0 bits (5) than 1 bits (7), so keep only the 5 numbers with a 0 in the first position: 00100, 01111, 00111, 00010, and 01010.
+# Then, consider the second bit of the 5 remaining numbers: there are fewer 1 bits (2) than 0 bits (3), so keep only the 2 numbers with a 1 in the second position: 01111 and 01010.
+# In the third position, there are an equal number of 0 bits and 1 bits (one each). So, to find the CO2 scrubber rating, keep the number with a 0 in that position: 01010.
+# As there is only one number left, stop; the CO2 scrubber rating is 01010, or 10 in decimal.
+# Finally, to find the life support rating, multiply the oxygen generator rating (23) by the CO2 scrubber rating (10) to get 230.
+
+# Use the binary numbers in your diagnostic report to calculate the oxygen generator rating and CO2 scrubber rating, then multiply them together. What is the life support rating of the submarine? (Be sure to represent your answer in decimal, not binary.)
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+positions = {}
+(0..NUM_CHARS).each{|n| positions[n] = []}
+
+oxygen_ratings = diagnostics.dup
+c_oh_2_ratings = diagnostics.dup
+
+NUM_CHARS.times do |digit_index|
+  tallies = {"0" => 0, "1" => 0}
+  oxygen_ratings.each{|binary_string| tallies[binary_string[digit_index]] += 1}
+  puts "Tallies at #{digit_index}: #{tallies.inspect}" if DEBUG
+
+  keeping = nil
+  oxygen_ratings.collect! do |binary_string|
+    keeping = tallies["0"] <= tallies["1"] ? "1" : "0"
+    binary_string[digit_index] == keeping ? binary_string : nil
+  end
+  oxygen_ratings.compact!
+  if DEBUG
+    puts "Oxygen ratings from digit #{digit_index}, keeping #{keeping}"
+    puts "  #{oxygen_ratings.inspect}"
+  end
+  break if oxygen_ratings.length == 1
+  tallies = oxygen_ratings.tally
+end
+
+oxygen_rating = oxygen_ratings.first.to_i(2)
+puts "Oxygen rating is #{oxygen_rating} (#{oxygen_ratings.first})"
+
+
+
+NUM_CHARS.times do |digit_index|
+  tallies = {"0" => 0, "1" => 0}
+  c_oh_2_ratings.each{|binary_string| tallies[binary_string[digit_index]] += 1}
+  puts "Tallies at #{digit_index}: #{tallies.inspect}" if DEBUG
+
+  keeping = nil
+  c_oh_2_ratings.collect! do |binary_string|
+    keeping = tallies["0"] <= tallies["1"] ? "0" : "1"
+    binary_string[digit_index] == keeping ? binary_string : nil
+  end
+  c_oh_2_ratings.compact!
+  if DEBUG
+    puts "CO2 ratings from digit #{digit_index}, keeping #{keeping}"
+    puts "  #{c_oh_2_ratings.inspect}"
+  end
+  break if c_oh_2_ratings.length == 1
+  tallies = c_oh_2_ratings.tally
+end
+
+c_oh_2_rating = c_oh_2_ratings.first.to_i(2)
+puts "CO2 rating is #{c_oh_2_rating} (#{c_oh_2_ratings.first})"
+
+puts
+puts "Life support rating is #{oxygen_rating * c_oh_2_rating}"
