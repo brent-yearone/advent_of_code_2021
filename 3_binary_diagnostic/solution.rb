@@ -145,7 +145,6 @@ NUM_CHARS.times do |digit_index|
     puts "  #{oxygen_ratings.inspect}"
   end
   break if oxygen_ratings.length == 1
-  tallies = oxygen_ratings.tally
 end
 
 oxygen_rating = oxygen_ratings.first.to_i(2)
@@ -169,7 +168,6 @@ NUM_CHARS.times do |digit_index|
     puts "  #{c_oh_2_ratings.inspect}"
   end
   break if c_oh_2_ratings.length == 1
-  tallies = c_oh_2_ratings.tally
 end
 
 c_oh_2_rating = c_oh_2_ratings.first.to_i(2)
