@@ -126,7 +126,7 @@ puts "PART II"
 positions = {}
 (0..NUM_CHARS).each{|n| positions[n] = []}
 
-def filter_readings!(readings:, digit_index:, label:, &block)
+def filter_readings!(readings:, digit_index:, label:, block:)
   tallies = {"0" => 0, "1" => 0}
   readings.each{|binary_string| tallies[binary_string[digit_index]] += 1}
   puts "Tallies at #{digit_index}: #{tallies.inspect}" if DEBUG
@@ -142,25 +142,18 @@ def filter_readings!(readings:, digit_index:, label:, &block)
   end
 end
 
-oxygen_ratings = diagnostics.dup
-NUM_CHARS.times do |digit_index|
-  filter_readings!(readings: oxygen_ratings, digit_index: digit_index, label: 'Oxygen') do |tally0, tally1|
-    tally0 <= tally1 ? "1" : "0"
+def find_rating(readings:, label:, block:)
+  NUM_CHARS.times do |digit_index|
+    filter_readings!(readings: readings, digit_index: digit_index, label: label, block: block)
+    break if readings.length == 1
   end
-  break if oxygen_ratings.length == 1
+  reading = readings.first.to_i(2)
+  puts "#{label} rating is #{reading} (#{readings.first})"
+  reading
 end
-oxygen_rating = oxygen_ratings.first.to_i(2)
-puts "Oxygen rating is #{oxygen_rating} (#{oxygen_ratings.first})"
 
-c_oh_2_ratings = diagnostics.dup
-NUM_CHARS.times do |digit_index|
-  filter_readings!(readings: c_oh_2_ratings, digit_index: digit_index, label: 'CO2') do |tally0, tally1|
-    tally0 <= tally1 ? "0" : "1"
-  end
-  break if c_oh_2_ratings.length == 1
-end
-c_oh_2_rating = c_oh_2_ratings.first.to_i(2)
-puts "CO2 rating is #{c_oh_2_rating} (#{c_oh_2_ratings.first})"
+oxygen_rating = find_rating(readings: diagnostics.dup, label: 'Oxygen', block: ->(tally0, tally1){ tally0 <= tally1 ? "1" : "0"})
+c_oh_2_rating = find_rating(readings: diagnostics.dup, label: 'CO2', block: ->(tally0, tally1){ tally0 <= tally1 ? "0" : "1"})
 
 puts
 puts "Life support rating is #{oxygen_rating * c_oh_2_rating}"
