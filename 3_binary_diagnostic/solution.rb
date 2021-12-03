@@ -126,50 +126,39 @@ puts "PART II"
 positions = {}
 (0..NUM_CHARS).each{|n| positions[n] = []}
 
-oxygen_ratings = diagnostics.dup
-c_oh_2_ratings = diagnostics.dup
-
-NUM_CHARS.times do |digit_index|
+def filter_readings!(readings:, digit_index:, label:, &block)
   tallies = {"0" => 0, "1" => 0}
-  oxygen_ratings.each{|binary_string| tallies[binary_string[digit_index]] += 1}
+  readings.each{|binary_string| tallies[binary_string[digit_index]] += 1}
   puts "Tallies at #{digit_index}: #{tallies.inspect}" if DEBUG
 
-  keeping = nil
-  oxygen_ratings.collect! do |binary_string|
-    keeping = tallies["0"] <= tallies["1"] ? "1" : "0"
+  keeping = block.call(tallies["0"], tallies["1"])
+  readings.collect! do |binary_string|
     binary_string[digit_index] == keeping ? binary_string : nil
   end
-  oxygen_ratings.compact!
+  readings.compact!
   if DEBUG
-    puts "Oxygen ratings from digit #{digit_index}, keeping #{keeping}"
-    puts "  #{oxygen_ratings.inspect}"
+    puts "#{label} ratings from digit #{digit_index}, keeping #{keeping}"
+    puts "  #{readings.inspect}"
+  end
+end
+
+oxygen_ratings = diagnostics.dup
+NUM_CHARS.times do |digit_index|
+  filter_readings!(readings: oxygen_ratings, digit_index: digit_index, label: 'Oxygen') do |tally0, tally1|
+    tally0 <= tally1 ? "1" : "0"
   end
   break if oxygen_ratings.length == 1
 end
-
 oxygen_rating = oxygen_ratings.first.to_i(2)
 puts "Oxygen rating is #{oxygen_rating} (#{oxygen_ratings.first})"
 
-
-
+c_oh_2_ratings = diagnostics.dup
 NUM_CHARS.times do |digit_index|
-  tallies = {"0" => 0, "1" => 0}
-  c_oh_2_ratings.each{|binary_string| tallies[binary_string[digit_index]] += 1}
-  puts "Tallies at #{digit_index}: #{tallies.inspect}" if DEBUG
-
-  keeping = nil
-  c_oh_2_ratings.collect! do |binary_string|
-    keeping = tallies["0"] <= tallies["1"] ? "0" : "1"
-    binary_string[digit_index] == keeping ? binary_string : nil
-  end
-  c_oh_2_ratings.compact!
-  if DEBUG
-    puts "CO2 ratings from digit #{digit_index}, keeping #{keeping}"
-    puts "  #{c_oh_2_ratings.inspect}"
+  filter_readings!(readings: c_oh_2_ratings, digit_index: digit_index, label: 'CO2') do |tally0, tally1|
+    tally0 <= tally1 ? "0" : "1"
   end
   break if c_oh_2_ratings.length == 1
 end
-
 c_oh_2_rating = c_oh_2_ratings.first.to_i(2)
 puts "CO2 rating is #{c_oh_2_rating} (#{c_oh_2_ratings.first})"
 
