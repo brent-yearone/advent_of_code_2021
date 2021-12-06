@@ -8,7 +8,6 @@ class Board
     @rows = Array.new(@board_dimension){ @board_dimension }
     @cols = Array.new(@board_dimension){ @board_dimension }
     @marked_numbers = {}
-    @score = 0
 
     numbers.each_with_index do |row, row_index|
       row.each_with_index do |number, col_index|
@@ -25,8 +24,11 @@ class Board
     @cols[col_index] -= 1
     if @rows[row_index] == 0 || @cols[col_index] == 0
       @bingo = true
-      @score = number * unmarked_numbers.sum
     end
+  end
+
+  def score(draw_number)
+    draw_number * unmarked_numbers.sum
   end
 
   def unmarked_numbers
@@ -43,7 +45,7 @@ class Board
     rows.each do |row|
       output += row.join(' ') + "\n"
     end
-    output += "Score: #{@score}\n"
+    output += "Unmarked numbers sum: #{unmarked_numbers.sum}\n"
     output
   end
 end

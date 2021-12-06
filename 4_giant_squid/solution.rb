@@ -56,11 +56,12 @@ require './board'
 
 # To guarantee victory against the giant squid, figure out which board will win first. What will your final score be if you choose that board?
 
-DEBUG = true
+DEBUG = false
 
 draws = []
 board = []
-boards = []
+boards1 = []
+boards2 = []
 
 File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
   case
@@ -69,9 +70,10 @@ File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
     puts "Read draws: #{draws.inspect}" if DEBUG
   when line.chomp.length == 0
     if board.length > 0
-      boards << Board.new(board)
+      boards1 << Board.new(board)
+      boards2 << Board.new(board)
       board = []
-      puts "Finished board #{boards.last.inspect}" if DEBUG
+      puts "Finished board #{boards1.last.inspect}" if DEBUG
     else
       puts "Blank between draws and boards" if DEBUG
       next
@@ -81,10 +83,14 @@ File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
     puts "Read numbers #{board.last.inspect}" if DEBUG
   end
 end
-boards << Board.new(board) # Get the last one; there's no extra blank line at the end of the file to trigger the load
-puts "Finished board #{boards.last.inspect}" if DEBUG
+
+# Get the last one; there's no extra blank line at the end of the file to trigger the load
+boards1 << Board.new(board)
+boards2 << Board.new(board)
+
+puts "Finished board #{boards1.last.inspect}" if DEBUG
 puts
-puts "Loaded #{draws.length} draws, to be played on #{boards.length} boards"
+puts "Loaded #{draws.length} draws, to be played on #{boards1.length} boards"
 
 puts
 puts
@@ -92,20 +98,64 @@ puts "*******************"
 puts "PART I"
 
 winning_board = nil
+winning_number = nil
 
 draws.each do |number|
   break if winning_board
   puts "Calling #{number}" if DEBUG
-  boards.each_with_index do |board, index|
+  boards1.each_with_index do |board, index|
     board.mark(number)
     if board.bingo
       puts "BINGO!!! On board #{index+1}"
       winning_board = board
+      winning_number = number
       break
     end
   end
 end
 
 puts "Winning board: #{winning_board.inspect}"
+puts "Winning board score: #{winning_board.score(winning_number)}"
 puts ""
 
+
+# --- Part Two ---
+
+# On the other hand, it might be wise to try a different strategy: let the giant squid win.
+
+# You aren't sure how many bingo boards a giant squid could play at once, so rather than waste time counting its arms, the safe thing to do is to figure out which board will win last and choose that one. That way, no matter which boards it picks, it will win for sure.
+
+# In the above example, the second board is the last to win, which happens after 13 is eventually called and its middle column is completely marked. If you were to keep playing until this point, the second board would have a sum of unmarked numbers equal to 148 for a final score of 148 * 13 = 1924.
+
+# Figure out which board will win last. Once it wins, what would its final score be?
+
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+boards_in_play = boards2.length
+losing_board = nil
+winning_number = nil
+
+draws.each do |number|
+  break if boards_in_play == 0
+  puts "Calling #{number}" if DEBUG
+  boards2.each_with_index do |board, index|
+    next if board.bingo
+    board.mark(number)
+    if board.bingo
+      puts "BINGO!!! On board #{index+1}"
+      boards_in_play -= 1
+      if boards_in_play == 0
+        losing_board = board
+        winning_number = number
+      end
+    end
+  end
+end
+
+puts "Losing board: #{losing_board.inspect}"
+puts "Losing board score: #{losing_board.score(winning_number)}"
+puts ""
