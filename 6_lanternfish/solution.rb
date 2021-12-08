@@ -55,29 +55,31 @@ class School
   attr_reader :fish
 
   def initialize(fish)
-    @fish = fish
+    @fish = fish.tally
   end
 
   def tick!
-    new_fish = []
-    @fish.collect! do |fish|
+    new_fish = {}
+    @fish.each do |fish, count|
       if fish == 0
-        new_fish << 8
-        6
+        new_fish[8] = count
+        new_fish[6] ||= 0
+        new_fish[6] += count
       else
-        fish - 1
+        new_fish[fish - 1] ||= 0
+        new_fish[fish - 1] += count
       end
     end
-    @fish += new_fish
+    @fish = new_fish
     puts "Tick: #{self}" if DEBUG
   end
 
   def size
-    @fish.length
+    @fish.values.sum
   end
 
   def to_s
-    @fish.join(',')
+    @fish.inspect
   end
 end
 
@@ -86,9 +88,10 @@ def load_school
   File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
     fish = line.chomp.split(',').collect(&:to_i)
   end
+  school = School.new(fish)
   puts "Loaded school"
-  puts "  #{fish.inspect}" if DEBUG
-  School.new(fish)
+  puts "  #{school.inspect}" if DEBUG
+  school
 end
 
 puts
@@ -99,6 +102,21 @@ puts "PART I"
 school = load_school
 
 number_of_days = 80
+
+number_of_days.times do |day_number|
+  school.tick!
+end
+
+puts "School size after #{number_of_days} days: #{school.size}"
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+school = load_school
+
+number_of_days = 256
 
 number_of_days.times do |day_number|
   school.tick!
