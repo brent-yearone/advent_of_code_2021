@@ -99,3 +99,85 @@ map.each do |coordinates, number|
 end
 
 puts "Count of spaces where at least two lines overlap: #{count}"
+
+
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+class Coordinate
+  include Comparable
+
+  attr_reader :x, :y
+
+  def initialize(x, y)
+    @x = x
+    @y = y
+  end
+
+  def <=>(other)
+    if @x == other.x
+      @y <=> other.y
+    else
+      @x <=> other.x
+    end
+  end
+
+  def to_s
+    "(#{@x}, #{@y})"
+  end
+end
+
+map = {}
+
+File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
+  coordinates = line.chomp.split(' -> ')
+
+  x1,y1 = coordinates[0].split(',').collect(&:to_i)
+  x2,y2 = coordinates[1].split(',').collect(&:to_i)
+  puts "Coordinates: (#{x1},#{y1}) -> (#{x1},#{y1})" if DEBUG
+
+  x_distance = (x1 - x2).abs
+  y_distance = (y1 - y2).abs
+
+  x_range = x1 < x2 ? (x1..x2).to_a : (x2..x1).to_a.reverse
+  y_range = y1 < y2 ? (y1..y2).to_a : (y2..y1).to_a.reverse
+  if x_range.length == 1 && y_range.length > 1
+    x_range = Array.new(y_range.length){ x_range.first }
+  elsif y_range.length == 1 && x_range.length > 1
+    y_range = Array.new(x_range.length){ y_range.first }
+  end
+  if DEBUG
+    puts "  X-range: #{x_range}"
+    puts "  Y-range: #{y_range}"
+  end
+
+  x_range.zip(y_range).each do |x,y|
+    map[[x,y]] ||= 0
+    map[[x,y]] += 1
+  end
+end
+if DEBUG
+  10.times do |y|
+    line = ''
+    10.times do |x|
+      if map[[x,y]]
+        line << map[[x,y]].to_s
+      else
+        line << '.'
+      end
+    end
+    puts line
+  end
+end
+
+puts "Loaded coordinates"
+
+count = 0
+map.each do |coordinates, number|
+  count += 1 if number >= 2
+end
+
+puts "Count of spaces where at least two lines overlap: #{count}"
