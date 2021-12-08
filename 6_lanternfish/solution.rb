@@ -51,33 +51,57 @@
 
 DEBUG = false
 
+class School
+  attr_reader :fish
+
+  def initialize(fish)
+    @fish = fish
+  end
+
+  def tick!
+    new_fish = []
+    @fish.collect! do |fish|
+      if fish == 0
+        new_fish << 8
+        6
+      else
+        fish - 1
+      end
+    end
+    @fish += new_fish
+    puts "Tick: #{self}" if DEBUG
+  end
+
+  def size
+    @fish.length
+  end
+
+  def to_s
+    @fish.join(',')
+  end
+end
+
+def load_school
+  fish = nil
+  File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
+    fish = line.chomp.split(',').collect(&:to_i)
+  end
+  puts "Loaded school"
+  puts "  #{fish.inspect}" if DEBUG
+  School.new(fish)
+end
+
 puts
 puts
 puts "*******************"
 puts "PART I"
 
-school = []
-
-File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
-  school = line.chomp.split(',').collect(&:to_i)
-end
-puts "Loaded school"
-puts "  #{school.inspect}" if DEBUG
+school = load_school
 
 number_of_days = 80
 
 number_of_days.times do |day_number|
-  new_school = []
-  school.collect! do |fish|
-    if fish == 0
-      new_school << 8
-      6
-    else
-      fish - 1
-    end
-  end
-  school += new_school
-  puts "Day #{day_number + 1}: #{school.join(',')}" if DEBUG
+  school.tick!
 end
 
-puts "School size after #{number_of_days} days: #{school.length}"
+puts "School size after #{number_of_days} days: #{school.size}"
