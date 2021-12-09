@@ -67,7 +67,7 @@
 
 # In the output values, how many times do digits 1, 4, 7, or 8 appear?
 
-DEBUG = false
+DEBUG = true
 
 count = 0
 File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
@@ -189,13 +189,63 @@ SEGMENT_COUNTS = {
 
 data = {}
 
+class Segment
+  attr_reader :chars, :segment, :length
+
+  def initialize(segment)
+    @chars = segment.chars.sort
+    @segment = @chars.join
+    @length = @chars.length
+  end
+
+  def &(other_segment)
+    @chars & other_segment.chars
+  end
+
+  def ==(other_segment)
+    @segment == other_segment.segment
+  end
+
+  def to_s
+    @segment
+  end
+
+  def inspect
+    "\"#{@segment}\""
+  end
+end
+
+class SolutionMap
+  attr_reader :segments
+  attr_reader :numbers
+
+  def initialize
+    @segments = {}
+    @numbers = {}
+  end
+
+  def add(segment, number)
+    @segments[segment] = number
+    @numbers[number] = segment
+  end
+
+  def lookup_segment(segment)
+    key = @segments.keys.find{|k| k == segment}
+    @segments[key]
+  end
+
+  def inspect
+    @numbers.inspect
+  end
+end
+
 File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
   digits, outputs = line.chomp.split(' | ')
   puts "#{digits} | #{outputs}" if DEBUG
   digits = digits.split(' ')
-  digits.collect!{|d| d.chars.sort.join }
+  digits.collect!{|d| Segment.new(d) }
   outputs = outputs.split(' ')
-  outputs.collect!{|d| d.chars.sort.join }
+  outputs.collect!{|d| Segment.new(d) }
   data[digits] = outputs
 end
 
@@ -207,71 +257,55 @@ sum = 0
 data.each do |digits, outputs|
   puts if DEBUG
   puts "Processing #{digits} => #{outputs}" if DEBUG
-  segment_map = {}
-  map = {} # {'cf' => 1}, but customized for this set of digits/outputs
-  inverse_map = {}
+  map = SolutionMap.new
 
-  digits.each do |segment_characters|
-    case segment_characters.length # Compare with SEGMENT_COUNTS
+  digits.each do |segment|
+    case segment.length # Compare with SEGMENT_COUNTS
     when 2
-      inverse_map[1] = segment_characters
-      map[segment_characters] = 1
+      map.add(segment, 1)
     when 3
-      inverse_map[7] = segment_characters
-      map[segment_characters] = 7
+      map.add(segment, 7)
     when 4
-      inverse_map[4] = segment_characters
-      map[segment_characters] = 4
+      map.add(segment, 4)
     when 7
-      inverse_map[8] = segment_characters
-      map[segment_characters] = 8
-    else
-      nil
+      map.add(segment, 8)
     end
   end
   puts "Map: #{map.inspect}" if DEBUG
 
   # 2, 3, and 5 all have 5 segments. They all share segments adg. 3 shares segments cf with 1, which is only cf.
   two_three_five = digits.select{|o| o.length == 5 }
-  two_three_five.collect!(&:chars)
-  puts "2,3,5: #{two_three_five.collect(&:join)}" if DEBUG
-  three = two_three_five.find{|segments| (segments & inverse_map[1].chars) == inverse_map[1].chars}.join
-  map[three] = 3
-  inverse_map[3] = three
+  puts "2,3,5: #{two_three_five.inspect}" if DEBUG
+  three = two_three_five.find{|segment| (segment & map.numbers[1]) == map.numbers[1].chars}
+  map.add(three, 3)
   puts "three: #{three.inspect}" if DEBUG
   puts "map: #{map.inspect}" if DEBUG
-  two_five = two_three_five.reject{|segments| segments == three.chars}
-  puts "2,5: #{two_five.collect(&:join)}" if DEBUG
+  two_five = two_three_five - [three]
+  puts "2,5: #{two_five.inspect}" if DEBUG
   adg = two_five.first & two_five.last
   puts "adg: #{adg.inspect}" if DEBUG
-  two = two_five.find{|segments| ((segments - adg) & inverse_map[4].chars).length == 1}.join
-  map[two] = 2
-  inverse_map[2] = two
-  five = two_five.select{|segments| segments != two.chars}.join
-  map[five] = 5
-  inverse_map[5] = five
+  two = two_five.find{|segment| ((segment.chars - adg) & map.numbers[4].chars).length == 1}
+  map.add(two, 2)
+  five = two_five.select{|segment| segment != two}.first
+  map.add(five, 5)
   puts "map: #{map.inspect}" if DEBUG
 
   # 0, 6, and 9 all have 6 segments. They all share segments abgf.
   zero_six_nine = digits.select{|o| o.length == 6}
-  zero_six_nine.collect!(&:chars)
-  puts "0,6,9: #{zero_six_nine.collect(&:join)}" if DEBUG
-  six = zero_six_nine.find{|segments| (segments & inverse_map[1].chars).length == 1}.join
-  map[six] = 6
-  inverse_map[6] = six
+  puts "0,6,9: #{zero_six_nine.inspect}" if DEBUG
+  six = zero_six_nine.find{|segments| (segments & map.numbers[1]).length == 1}
+  map.add(six, 6)
   puts "map: #{map.inspect}" if DEBUG
-  zero_nine = zero_six_nine.reject{|segments| segments == six.chars}
-  nine = zero_nine.find{|segments| (segments & inverse_map[4].chars) == inverse_map[4].chars}.join
-  map[nine] = 9
-  inverse_map[9] = nine
-  zero = zero_nine.find{|segments| segments != nine.chars}.join
-  map[zero] = 0
-  inverse_map[0] = zero
+  zero_nine = zero_six_nine - [six]
+  nine = zero_nine.find{|segments| (segments & map.numbers[4]) == map.numbers[4].chars}
+  map.add(nine, 9)
+  zero = (zero_nine - [nine]).first
+  map.add(zero, 0)
   puts "map: #{map.inspect}" if DEBUG
 
-  output_value = outputs.collect{|o| map[o].to_s}.join
-  puts "output value: #{output_value}" if DEBUG
   # Now, we've solved this particular set of digits, so let's calculate the outputs.
+  output_value = outputs.collect{|o| map.lookup_segment(o).to_s}.join
+  puts "output value: #{output_value}" if DEBUG
   sum += output_value.to_i
 end
 
