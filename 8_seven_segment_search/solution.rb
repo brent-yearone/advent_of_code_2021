@@ -67,7 +67,7 @@
 
 # In the output values, how many times do digits 1, 4, 7, or 8 appear?
 
-DEBUG = true
+DEBUG = false
 
 count = 0
 File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
@@ -91,3 +91,188 @@ puts "PART I"
 
 puts "The digits 1, 4, 7, and 8 appear #{count} times in the outputs"
 
+
+
+# --- Part Two ---
+
+# Through a little deduction, you should now be able to determine the remaining digits. Consider again the first example above:
+
+# acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab |
+# cdfeb fcadb cdfeb cdbaf
+# After some careful analysis, the mapping between signal wires and segments only make sense in the following configuration:
+
+#  dddd
+# e    a
+# e    a
+#  ffff
+# g    b
+# g    b
+#  cccc
+# So, the unique signal patterns would correspond to the following digits:
+
+# acedgfb: 8
+# cdfbe: 5
+# gcdfa: 2
+# fbcad: 3
+# dab: 7
+# cefabd: 9
+# cdfgeb: 6
+# eafb: 4
+# cagedb: 0
+# ab: 1
+# Then, the four digits of the output value can be decoded:
+
+# cdfeb: 5
+# fcadb: 3
+# cdfeb: 5
+# cdbaf: 3
+# Therefore, the output value for this entry is 5353.
+
+# Following this same process for each entry in the second, larger example above, the output value of each entry can be determined:
+
+# fdgacbe cefdb cefbgd gcbe: 8394
+# fcgedb cgb dgebacf gc: 9781
+# cg cg fdcagb cbg: 1197
+# efabcd cedba gadfec cb: 9361
+# gecf egdcabf bgf bfgea: 4873
+# gebdcfa ecba ca fadegcb: 8418
+# cefg dcbef fcge gbcadfe: 4548
+# ed bcgafe cdgba cbgef: 1625
+# gbdfcae bgc cg cgb: 8717
+# fgae cfgab fg bagce: 4315
+# Adding all of the output values in this larger example produces 61229.
+
+# For each entry, determine all of the wire/segment connections and decode the four-digit output values. What do you get if you add up all of the output values?
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+# How many sements does each digit have? { digit => segment_count }
+SEGMENT_COUNTS = {
+  0 => 6,
+  1 => 2, # UNIQUE
+  2 => 5,
+  3 => 5,
+  4 => 4, # UNIQUE
+  5 => 5,
+  6 => 6,
+  7 => 3, # UNIQUE
+  8 => 7, # UNIQUE
+  9 => 6
+}
+
+# How many times does a sement appear in the numbers 0-10? { segment_letter => count }
+# SEGEMENT_FREQUENCIES = {
+#   'a' => 8,
+#   'b' => 6, # UNIQUE
+#   'c' => 8,
+#   'd' => 7,
+#   'e' => 4, # UNIQUE
+#   'f' => 9, # UNIQUE
+#   'g' => 7
+# }
+
+# LETTER_SEGMENTS = {
+#   0 => 'abcefg',
+#   1 => 'cf',
+#   2 => 'acdeg',
+#   3 => 'acdfg',
+#   4 => 'bcdf',
+#   5 => 'abdfg',
+#   6 => 'abdefg',
+#   7 => 'acf',
+#   8 => 'abcdefg',
+#   9 => 'abcdfg'
+# }
+
+data = {}
+
+File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
+  digits, outputs = line.chomp.split(' | ')
+  puts "#{digits} | #{outputs}" if DEBUG
+  digits = digits.split(' ')
+  digits.collect!{|d| d.chars.sort.join }
+  outputs = outputs.split(' ')
+  outputs.collect!{|d| d.chars.sort.join }
+  data[digits] = outputs
+end
+
+puts "Parsed inputs"
+puts data.inspect if DEBUG
+puts
+
+sum = 0
+data.each do |digits, outputs|
+  puts if DEBUG
+  puts "Processing #{digits} => #{outputs}" if DEBUG
+  segment_map = {}
+  map = {} # {'cf' => 1}, but customized for this set of digits/outputs
+  inverse_map = {}
+
+  digits.each do |segment_characters|
+    case segment_characters.length # Compare with SEGMENT_COUNTS
+    when 2
+      inverse_map[1] = segment_characters
+      map[segment_characters] = 1
+    when 3
+      inverse_map[7] = segment_characters
+      map[segment_characters] = 7
+    when 4
+      inverse_map[4] = segment_characters
+      map[segment_characters] = 4
+    when 7
+      inverse_map[8] = segment_characters
+      map[segment_characters] = 8
+    else
+      nil
+    end
+  end
+  puts "Map: #{map.inspect}" if DEBUG
+
+  # 2, 3, and 5 all have 5 segments. They all share segments adg. 3 shares segments cf with 1, which is only cf.
+  two_three_five = digits.select{|o| o.length == 5 }
+  two_three_five.collect!(&:chars)
+  puts "2,3,5: #{two_three_five.collect(&:join)}" if DEBUG
+  three = two_three_five.find{|segments| (segments & inverse_map[1].chars) == inverse_map[1].chars}.join
+  map[three] = 3
+  inverse_map[3] = three
+  puts "three: #{three.inspect}" if DEBUG
+  puts "map: #{map.inspect}" if DEBUG
+  two_five = two_three_five.reject{|segments| segments == three.chars}
+  puts "2,5: #{two_five.collect(&:join)}" if DEBUG
+  adg = two_five.first & two_five.last
+  puts "adg: #{adg.inspect}" if DEBUG
+  two = two_five.find{|segments| ((segments - adg) & inverse_map[4].chars).length == 1}.join
+  map[two] = 2
+  inverse_map[2] = two
+  five = two_five.select{|segments| segments != two.chars}.join
+  map[five] = 5
+  inverse_map[5] = five
+  puts "map: #{map.inspect}" if DEBUG
+
+  # 0, 6, and 9 all have 6 segments. They all share segments abgf.
+  zero_six_nine = digits.select{|o| o.length == 6}
+  zero_six_nine.collect!(&:chars)
+  puts "0,6,9: #{zero_six_nine.collect(&:join)}" if DEBUG
+  six = zero_six_nine.find{|segments| (segments & inverse_map[1].chars).length == 1}.join
+  map[six] = 6
+  inverse_map[6] = six
+  puts "map: #{map.inspect}" if DEBUG
+  zero_nine = zero_six_nine.reject{|segments| segments == six.chars}
+  nine = zero_nine.find{|segments| (segments & inverse_map[4].chars) == inverse_map[4].chars}.join
+  map[nine] = 9
+  inverse_map[9] = nine
+  zero = zero_nine.find{|segments| segments != nine.chars}.join
+  map[zero] = 0
+  inverse_map[0] = zero
+  puts "map: #{map.inspect}" if DEBUG
+
+  output_value = outputs.collect{|o| map[o].to_s}.join
+  puts "output value: #{output_value}" if DEBUG
+  # Now, we've solved this particular set of digits, so let's calculate the outputs.
+  sum += output_value.to_i
+end
+
+puts "Solved! The grand sum is #{sum}"
