@@ -199,7 +199,11 @@ class Segment
   end
 
   def &(other_segment)
-    @chars & other_segment.chars
+    Segment.new((@chars & other_segment.chars).join)
+  end
+
+  def -(other_segment)
+    Segment.new((@chars - other_segment.chars).join)
   end
 
   def ==(other_segment)
@@ -217,7 +221,6 @@ end
 
 class SolutionMap
   attr_reader :segments
-  attr_reader :numbers
 
   def initialize
     @segments = {}
@@ -227,6 +230,10 @@ class SolutionMap
   def add(segment, number)
     @segments[segment] = number
     @numbers[number] = segment
+  end
+
+  def [](number)
+    @numbers[number]
   end
 
   def lookup_segment(segment)
@@ -276,7 +283,7 @@ data.each do |digits, outputs|
   # 2, 3, and 5 all have 5 segments. They all share segments adg. 3 shares segments cf with 1, which is only cf.
   two_three_five = digits.select{|o| o.length == 5 }
   puts "2,3,5: #{two_three_five.inspect}" if DEBUG
-  three = two_three_five.find{|segment| (segment & map.numbers[1]) == map.numbers[1].chars}
+  three = two_three_five.find{|segment| (segment & map[1]) == map[1]}
   map.add(three, 3)
   puts "three: #{three.inspect}" if DEBUG
   puts "map: #{map.inspect}" if DEBUG
@@ -284,7 +291,7 @@ data.each do |digits, outputs|
   puts "2,5: #{two_five.inspect}" if DEBUG
   adg = two_five.first & two_five.last
   puts "adg: #{adg.inspect}" if DEBUG
-  two = two_five.find{|segment| ((segment.chars - adg) & map.numbers[4].chars).length == 1}
+  two = two_five.find{|segment| ((segment - adg) & map[4]).length == 1}
   map.add(two, 2)
   five = two_five.select{|segment| segment != two}.first
   map.add(five, 5)
@@ -293,11 +300,11 @@ data.each do |digits, outputs|
   # 0, 6, and 9 all have 6 segments. They all share segments abgf.
   zero_six_nine = digits.select{|o| o.length == 6}
   puts "0,6,9: #{zero_six_nine.inspect}" if DEBUG
-  six = zero_six_nine.find{|segments| (segments & map.numbers[1]).length == 1}
+  six = zero_six_nine.find{|segments| (segments & map[1]).length == 1}
   map.add(six, 6)
   puts "map: #{map.inspect}" if DEBUG
   zero_nine = zero_six_nine - [six]
-  nine = zero_nine.find{|segments| (segments & map.numbers[4]) == map.numbers[4].chars}
+  nine = zero_nine.find{|segments| (segments & map[4]) == map[4]}
   map.add(nine, 9)
   zero = (zero_nine - [nine]).first
   map.add(zero, 0)
