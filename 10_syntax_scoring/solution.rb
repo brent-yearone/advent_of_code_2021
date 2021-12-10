@@ -97,3 +97,95 @@ end
 
 puts "Total score: #{score}"
 
+
+# --- Part Two ---
+
+# Now, discard the corrupted lines. The remaining lines are incomplete.
+
+# Incomplete lines don't have any incorrect characters - instead, they're missing some closing characters at the end of the line. To repair the navigation subsystem, you just need to figure out the sequence of closing characters that complete all open chunks in the line.
+
+# You can only use closing characters (), ], }, or >), and you must add them in the correct order so that only legal pairs are formed and all chunks end up closed.
+
+# In the example above, there are five incomplete lines:
+
+# [({(<(())[]>[[{[]{<()<>> - Complete by adding }}]])})].
+# [(()[<>])]({[<{<<[]>>( - Complete by adding )}>]}).
+# (((({<>}<{<{<>}{[]{[]{} - Complete by adding }}>}>)))).
+# {<[[]]>}<{[{[{[]{()[[[] - Complete by adding ]]}}]}]}>.
+# <{([{{}}[<[[[<>{}]]]>[]] - Complete by adding ])}>.
+# Did you know that autocomplete tools also have contests? It's true! The score is determined by considering the completion string character-by-character. Start with a total score of 0. Then, for each character, multiply the total score by 5 and then increase the total score by the point value given for the character in the following table:
+
+# ): 1 point.
+# ]: 2 points.
+# }: 3 points.
+# >: 4 points.
+# So, the last completion string above - ])}> - would be scored as follows:
+
+# Start with a total score of 0.
+# Multiply the total score by 5 to get 0, then add the value of ] (2) to get a new total score of 2.
+# Multiply the total score by 5 to get 10, then add the value of ) (1) to get a new total score of 11.
+# Multiply the total score by 5 to get 55, then add the value of } (3) to get a new total score of 58.
+# Multiply the total score by 5 to get 290, then add the value of > (4) to get a new total score of 294.
+# The five lines' completion strings have total scores as follows:
+
+# }}]])})] - 288957 total points.
+# )}>]}) - 5566 total points.
+# }}>}>)))) - 1480781 total points.
+# ]]}}]}]}> - 995444 total points.
+# ])}> - 294 total points.
+# Autocomplete tools are an odd bunch: the winner is found by sorting all of the scores and then taking the middle score. (There will always be an odd number of scores to consider.) In this example, the middle score is 288957 because there are the same number of scores smaller and larger than it.
+
+# Find the completion string for each incomplete line, score the completion strings, and sort the scores. What is the middle score?
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+
+points_lookup = {
+  '(' => 1,
+  '[' => 2,
+  '{' => 3,
+  '<' => 4,
+}
+incomplete_line_scores = []
+
+File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
+  stack = []
+  valid_line = true
+
+  chunks = line.chomp.chars
+  puts "Chunks: #{chunks}" if DEBUG
+  chunks.each do |token|
+    if bracket_pairs.keys.include?(token)
+      stack.push(token)
+    elsif bracket_pairs.values.include?(token)
+      if token == bracket_pairs[stack.pop]
+        puts "  #{token} found an opening match" if DEBUG
+        # valid
+      else
+        puts "  #{token} is an illegal character" if DEBUG
+        valid_line = false
+        break
+      end
+    else
+      raise "How did we get here? Chunks: #{chunks}. Token: #{token}"
+    end
+  end
+
+  if valid_line # The remaining items in the stack are the unpaired opening braces
+    score = 0
+    stack.reverse.each do |opener|
+      score = (score * 5) + points_lookup[opener]
+    end
+    puts "Valid line (#{chunks.join}) with unpaired openers #{stack.join}. Score: #{score}" if DEBUG
+    incomplete_line_scores << score
+  end
+end
+
+puts
+puts "incomplete_line_scores: #{incomplete_line_scores.inspect}" if DEBUG
+final_score = incomplete_line_scores.sort[(incomplete_line_scores.length - 1)/2]
+puts
+puts "Final score: #{final_score}"
