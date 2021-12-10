@@ -49,6 +49,7 @@ puts "*******************"
 puts "PART I"
 
 low_points = []
+low_point_coordinates = []
 
 (max_x + 1).times do |x|
   (max_y + 1).times do |y|
@@ -62,9 +63,88 @@ low_points = []
     if neighbor_heights.all?{|h| h > focal_point_height}
       puts "Found a low point at (#{x},#{y}): #{focal_point_height}. Neighbor heights: #{neighbor_heights.inspect}" if DEBUG
       low_points << focal_point_height
+      low_point_coordinates << [x,y]
     end
   end
 end
 
 risk_factors = low_points.collect{|h| h + 1 }
 puts "Total risk: #{risk_factors.sum}"
+
+
+
+# --- Part Two ---
+
+# Next, you need to find the largest basins so you know what areas are most important to avoid.
+
+# A basin is all locations that eventually flow downward to a single low point. Therefore, every low point has a basin, although some basins are very small. Locations of height 9 do not count as being in any basin, and all other locations will always be part of exactly one basin.
+
+# The size of a basin is the number of locations within the basin, including the low point. The example above has four basins.
+
+# The top-left basin, size 3:
+
+# 2199943210
+# 3987894921
+# 9856789892
+# 8767896789
+# 9899965678
+# The top-right basin, size 9:
+
+# 2199943210
+# 3987894921
+# 9856789892
+# 8767896789
+# 9899965678
+# The middle basin, size 14:
+
+# 2199943210
+# 3987894921
+# 9856789892
+# 8767896789
+# 9899965678
+# The bottom-right basin, size 9:
+
+# 2199943210
+# 3987894921
+# 9856789892
+# 8767896789
+# 9899965678
+# Find the three largest basins and multiply their sizes together. In the above example, this is 9 * 14 * 9 = 1134.
+
+# What do you get if you multiply together the sizes of the three largest basins?
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+@map = map.dup
+basin_sizes = []
+
+def count_basin_neighbors(x,y)
+  height = @map.delete([x,y]) # Track that we've counted this spot
+
+  # Basins are lined with heights 9, and map edges. The nil check also prevents double-counting.
+  return 0 if height == 9 || height.nil?
+
+  neighbors = [
+    [x-1, y],
+    [x+1, y],
+    [x, y-1],
+    [x, y+1]
+  ]
+  neighbors.collect! do |nx,ny|
+    count_basin_neighbors(nx,ny)
+  end
+  1 + neighbors.sum # +1 because gotta count self
+end
+
+low_point_coordinates.each do |x,y|
+  basin_sizes << count_basin_neighbors(x,y)
+end
+
+puts
+puts "basin_sizes: #{basin_sizes.inspect}" if DEBUG
+largest_basins = basin_sizes.sort[-3..-1]
+puts "Three largest: #{largest_basins.inspect}"
+puts "Product of the three largest: #{largest_basins.inject(1){|accumulator, n| accumulator * n}}"
