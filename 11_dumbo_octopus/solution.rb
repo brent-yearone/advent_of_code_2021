@@ -368,3 +368,44 @@ total_flashes = 0
 end
 
 puts "Total flashes: #{total_flashes}"
+
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+map = {}
+
+y = 0
+File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
+  energies = line.chomp.chars.collect(&:to_i)
+  puts "Energies for row #{y}: #{energies}" if DEBUG
+  energies.each_with_index do |energy, x|
+    map[[x,y]] = Octopus.new(energy)
+  end
+  y += 1
+end
+puts "Map is #{@x_count}x#{@y_count}" if DEBUG
+
+all_flashed = false
+iteration = 0
+
+until all_flashed do
+  iteration += 1
+  if DEBUG
+    puts
+    puts "Map at step #{iteration}:"
+    print_map(map)
+  end
+  map.keys.each do |x,y|
+    increment_octopus(map, x,y)
+  end
+  all_flashed = true
+  map.each do |coords, octopus|
+    all_flashed = false unless octopus.flashed?
+    octopus.next_iteration
+  end
+end
+
+puts "Iteration with synchronized flashes (octopodarazzi!!): #{iteration}"
