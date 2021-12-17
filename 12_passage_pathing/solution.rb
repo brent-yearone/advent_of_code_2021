@@ -96,15 +96,16 @@ require './map.rb'
 # How many paths through this cave system are there that visit small caves at most once?
 
 DEBUG = false
+DEBUG_FILE_NUMBER = 3
 
-@map = Map.new
+@map = Map.new(debug: DEBUG)
 
 puts
 puts
 puts "*******************"
 puts "PART I"
 
-File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |line|
+File.open("./#{DEBUG ? 'sample_' : nil}input#{DEBUG ? '_' + DEBUG_FILE_NUMBER.to_s : ''}.txt").each do |line|
   node_names = line.chomp.split('-')
   puts "Nodes: #{node_names.join('-')}" if DEBUG
   @map.add_nodes(*node_names)
@@ -114,9 +115,72 @@ puts
 puts "Map: #{@map.inspect}" if DEBUG
 
 count = 0
-@map.paths do |path|
+@map.paths1 do |path|
   puts path.join(',') if DEBUG
   count += 1
 end
 
+puts "Found #{count} paths through"
+
+# --- Part Two ---
+
+# After reviewing the available paths, you realize you might have time to visit a single small cave twice. Specifically, big caves can be visited any number of times, a single small cave can be visited at most twice, and the remaining small caves can be visited at most once. However, the caves named start and end can only be visited exactly once each: once you leave the start cave, you may not return to it, and once you reach the end cave, the path must end immediately.
+
+# Now, the 36 possible paths through the first example above are:
+
+# start,A,b,A,b,A,c,A,end
+# start,A,b,A,b,A,end
+# start,A,b,A,b,end
+# start,A,b,A,c,A,b,A,end
+# start,A,b,A,c,A,b,end
+# start,A,b,A,c,A,c,A,end
+# start,A,b,A,c,A,end
+# start,A,b,A,end
+# start,A,b,d,b,A,c,A,end
+# start,A,b,d,b,A,end
+# start,A,b,d,b,end
+# start,A,b,end
+# start,A,c,A,b,A,b,A,end
+# start,A,c,A,b,A,b,end
+# start,A,c,A,b,A,c,A,end
+# start,A,c,A,b,A,end
+# start,A,c,A,b,d,b,A,end
+# start,A,c,A,b,d,b,end
+# start,A,c,A,b,end
+# start,A,c,A,c,A,b,A,end
+# start,A,c,A,c,A,b,end
+# start,A,c,A,c,A,end
+# start,A,c,A,end
+# start,A,end
+# start,b,A,b,A,c,A,end
+# start,b,A,b,A,end
+# start,b,A,b,end
+# start,b,A,c,A,b,A,end
+# start,b,A,c,A,b,end
+# start,b,A,c,A,c,A,end
+# start,b,A,c,A,end
+# start,b,A,end
+# start,b,d,b,A,c,A,end
+# start,b,d,b,A,end
+# start,b,d,b,end
+# start,b,end
+# The slightly larger example above now has 103 paths through it, and the even larger example now has 3509 paths through it.
+
+# Given these new rules, how many paths through this cave system are there?
+
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+
+count = 0
+paths = []
+@map.paths2 do |path|
+  paths << path.join(',')
+  count += 1
+end
+
+puts paths.sort.join("\n") if DEBUG
+puts
 puts "Found #{count} paths through"
