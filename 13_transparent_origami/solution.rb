@@ -110,10 +110,11 @@ DEBUG = false
 puts
 puts
 puts "*******************"
-puts "PARTS I"
+puts "PARTS I and II"
 puts
 
 map = Map.new
+part1 = true
 
 File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |input_line|
   line = input_line.chomp
@@ -130,8 +131,12 @@ File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |input_line|
     else
       raise "Don't know how to fold along axis '#{axis}' -- it must be 'x' or 'y'."
     end
-    puts "Dots: #{map.dots}"
-    break
+    if part1
+      puts "\n** PART I solution dots: #{map.dots}"
+      part1 = false
+    else
+      puts "Dots: #{map.dots}"
+    end
   elsif line == ''
     puts "Map loaded"
     puts map if DEBUG
@@ -140,6 +145,9 @@ File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |input_line|
     map.add_dot(x,y)
   end
 end
+
+puts "** \nPART II map:\n"
+puts map
 
 
 
