@@ -52,45 +52,47 @@
 DEBUG = false
 
 class Polymer
-  attr_reader :rules
+  attr_reader :rules, :elements
 
   def initialize(template)
-    @poly = template.chars
+    @pairs = Hash.new{ 0 }
+    @elements = Hash.new{ 0 }
+    template.length.times do |i|
+      @elements[template[i]] += 1
+      next if i == template.length - 1
+      @pairs[template[i..i+1]] += 1
+    end
     @rules = {}
   end
 
   def add_rule(parents, child)
-    @rules[parents.chars] = child
+    @rules[parents] = child
   end
 
   def polymerize!
-    new_poly = []
-    @poly.each_with_index do |char1, i|
-      if i == @poly.length - 1 # last char
-        new_poly << char1
+    new_pairs = Hash.new{ 0 }
+    last_pair = @pairs.keys.last
+    @pairs.each do |pair, count|
+      if new_element = @rules[pair]
+        @elements[new_element] += count
+        new_pairs["#{pair[0]}#{new_element}"] += count
+        new_pairs["#{new_element}#{pair[1]}"] += count
       else
-        char2 = @poly[i+1]
-        if new_element = @rules[[char1,char2]]
-          new_poly << char1
-          new_poly << new_element
-        else
-          new_s << char1
-        end
+        new_pairs[pair] = count
       end
     end
-    @poly = new_poly
+    @pairs = new_pairs
   end
 
   def to_s
-    @poly.join
+    "#{@pairs.inspect} (#{@elements.inspect})"
   end
 
   def print_min_max
-    tally = @poly.tally.invert
-    min = tally.keys.min
-    max = tally.keys.max
-    puts "The min is #{tally[min]}, which shows up #{min} times"
-    puts "The max is #{tally[max]}, which shows up #{max} times"
+    min = @elements.values.min
+    max = @elements.values.max
+    puts "The min element appears #{min} times in the polymer"
+    puts "The max element appears #{max} times in the polymer"
     puts "max - min = #{max} - #{min} = #{max - min}"
   end
 end
@@ -102,6 +104,7 @@ File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |input_line|
   line = input_line.chomp
   if first_line
     polymer = Polymer.new(line)
+    puts "Polymer: #{line}" if DEBUG
     first_line = false
     next
   elsif line == ''
@@ -112,7 +115,7 @@ File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |input_line|
   end
 end
 
-puts polymer.rules.inspect if DEBUG
+puts "Rules: #{polymer.rules.inspect}" if DEBUG
 
 puts
 puts
@@ -125,5 +128,16 @@ puts "Round 0: #{polymer}"
 10.times do |n|
   polymer.polymerize!
   puts "Round #{n+1}: #{polymer}"
+  polymer.print_min_max
+end
+
+puts
+puts
+puts "*******************"
+puts "PART II"
+puts
+
+30.times do |n|
+  polymer.polymerize!
   polymer.print_min_max
 end
