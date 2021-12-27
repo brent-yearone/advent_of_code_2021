@@ -37,6 +37,21 @@ require './path_search.rb'
 
 DEBUG = false
 
+class Hash
+  def to_map
+    output = "\n"
+    (MAX_Y + 1).times do |y|
+      (MAX_X + 1).times do |x|
+        node = self[[x,y]]
+        output << (node ? node.risk.to_s : '.')
+      end
+      output << "\n"
+    end
+    output
+  end
+end
+
+
 @map = {}
 MAX_X = DEBUG ? 9 : 99 # 10x10 or 100x100 map, zero-offset
 MAX_Y = DEBUG ? 9 : 99
@@ -73,6 +88,12 @@ class Node
   end
 end
 
+puts
+puts
+puts "*******************"
+puts "PART I"
+puts
+
 File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |input_line|
   line = input_line.chomp
   line.chars.each_with_index do |risk, x|
@@ -82,13 +103,48 @@ File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |input_line|
   y += 1
 end
 
-puts "Map: #{@map.inspect}" if DEBUG
+puts "Map: #{@map.to_map}"
+
+searcher = PathSearch.new(@map, @map[[0,0]], @map[[MAX_X,MAX_Y]])
+best_path = searcher.search
+total_risk = best_path.collect(&:risk).sum
+
+puts "Best path has risk #{total_risk}: #{best_path.collect(&:coordinates).inspect}"
+
+
 
 puts
 puts
 puts "*******************"
-puts "PART I"
+puts "PART II"
 puts
+
+GRID_X = MAX_X.dup
+GRID_Y = MAX_Y.dup
+MAX_X = DEBUG ? 49 : 499
+MAX_Y = DEBUG ? 49 : 499
+@map = {}
+y = 0
+File.open("./#{DEBUG ? 'sample_' : nil}input.txt").each do |input_line|
+  line = input_line.chomp
+  line.chars.each_with_index do |risk_txt, x|
+    risk = risk_txt.to_i
+    @map[[x,y]] = Node.new(x: x, y: y, risk: risk)
+    (0..4).each do |repeat_x|
+      (0..4).each do |repeat_y|
+        new_x = (GRID_X + 1)*repeat_x + x
+        new_y = (GRID_Y + 1)*repeat_y + y
+        new_risk = risk + repeat_x + repeat_y
+        new_risk -= 9 if new_risk > 9
+        @map[[new_x , new_y]] = Node.new(x: new_x, y: new_y, risk: new_risk)
+      end
+    end
+  end
+
+  y += 1
+end
+
+puts "Map: #{@map.to_map}"
 
 searcher = PathSearch.new(@map, @map[[0,0]], @map[[MAX_X,MAX_Y]])
 best_path = searcher.search
